@@ -43,7 +43,8 @@ const Link = (props) => {
           take,
           skip,
           orderBy
-        }
+        }, 
+        requestPolicy: 'cache-and-network'
       });
   
       const updatedLinks = feed.links.map((feedLink) => {

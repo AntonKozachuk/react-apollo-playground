@@ -42,7 +42,8 @@ const CreateLink = () => {
           take,
           skip,
           orderBy
-        }
+        },
+        requestPolicy: 'cache-and-network'
       });
 
       cache.writeQuery({
