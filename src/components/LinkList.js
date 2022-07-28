@@ -1,88 +1,109 @@
 import React from 'react';
-import { useQuery, gql } from '@apollo/client';
-import {useLocation, useNavigate} from 'react-router-dom';
 import Link from './Link';
 import { LINKS_PER_PAGE } from '../constants';
 
-export const FEED_QUERY = gql`
-  query FeedQuery(
-    $take: Int
-    $skip: Int
-    $orderBy: LinkOrderByInput
-  ) {
-    feed(take: $take, skip: $skip, orderBy: $orderBy) {
-      id
-      links {
-        id
-        createdAt
-        url
-        description
-        postedBy {
-          id
-          name
-        }
-        votes {
-          id
-          user {
-            id
-          }
-        }
-      }
-      count
-    }
-  }
-`;
-
+import {useQuery, gql} from '@apollo/client';
+import {useLocation, useNavigate} from 'react-router-dom';
 
 const NEW_LINKS_SUBSCRIPTION = gql`
-  subscription {
-    newLink {
-      id
-      url
-      description
-      createdAt
-      postedBy {
-        id
-        name
-      }
-      votes {
-        id
-        user {
-          id
+    subscription {
+        newLink {
+            id
+            url
+            description
+            createdAt
+            postedBy {
+                id
+                name
+            }
+            votes {
+                id
+                user {
+                    id
+                }
+            }
         }
-      }
     }
-  }
 `;
 
 const NEW_VOTES_SUBSCRIPTION = gql`
-  subscription {
-    newVote {
-      id
-      link {
-        id
-        url
-        description
-        createdAt
-        postedBy {
-          id
-          name
-        }
-        votes {
-          id
-          user {
+    subscription {
+        newVote {
             id
-          }
+            link {
+                id
+                url
+                description
+                createdAt
+                postedBy {
+                    id
+                    name
+                }
+                votes {
+                    id
+                    user {
+                        id
+                    }
+                }
+            }
+            user {
+                id
+            }
         }
-      }
-      user {
-        id
-      }
     }
-  }
 `;
 
-const LinkList = () => {
+
+export const FEED_QUERY = gql`
+    query FeedQuery(
+        $take: Int
+        $skip: Int
+        $orderBy: LinkOrderByInput
+    ) {
+        feed(take: $take, skip: $skip, orderBy: $orderBy) {
+            id
+            links {
+                id
+                createdAt
+                url
+                description
+                postedBy {
+                    id
+                    name
+                }
+                votes {
+                    id
+                    user {
+                        id
+                    }
+                }
+            }
+            count
+        }
+    }
+`;
+
+
+const getQueryVariables = (isNewPage, page) => {
+  const skip = isNewPage ? (page - 1) * LINKS_PER_PAGE : 0;
+  const take = isNewPage ? LINKS_PER_PAGE : 100;
+  const orderBy = { createdAt: 'desc' };
+  return { take, skip, orderBy };
+};
+
+const getLinksToRender = (isNewPage, data) => {
+  if (isNewPage) {
+    return data.feed.links;
+  }
+  const rankedLinks = data.feed.links.slice();
+  rankedLinks.sort(
+    (l1, l2) => l2.votes.length - l1.votes.length
+  );
+  return rankedLinks;
+};
+
+
+const LinkList = ({client}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isNewPage = location.pathname.includes(
@@ -95,12 +116,9 @@ const LinkList = () => {
     pageIndexParams[pageIndexParams.length - 1]
   );
   const pageIndex = page ? (page - 1) * LINKS_PER_PAGE : 0;
-  const getQueryVariables = (isNewPage, page) => {
-    const skip = isNewPage ? (page - 1) * LINKS_PER_PAGE : 0;
-    const take = isNewPage ? LINKS_PER_PAGE : 100;
-    const orderBy = { createdAt: 'desc' };
-    return { take, skip, orderBy };
-  };
+
+
+
 
   const {
     data,
@@ -111,27 +129,17 @@ const LinkList = () => {
     variables: getQueryVariables(isNewPage, page),
   });
 
-  const getLinksToRender = (isNewPage, data) => {
-    if (isNewPage) {
-      return data.feed.links;
-    }
-    const rankedLinks = data.feed.links.slice();
-    rankedLinks.sort(
-      (l1, l2) => l2.votes.length - l1.votes.length
-    );
-    return rankedLinks;
-  };
 
   subscribeToMore({
     document: NEW_LINKS_SUBSCRIPTION,
-    updateQuery: (prev, { subscriptionData }) => {
+    updateQuery: (prev, {subscriptionData}) => {
       if (!subscriptionData.data) return prev;
       const newLink = subscriptionData.data.newLink;
       const exists = prev.feed.links.find(
-        ({ id }) => id === newLink.id
+        ({id}) => id === newLink.id
       );
       if (exists) return prev;
-  
+
       return Object.assign({}, prev, {
         feed: {
           links: [newLink, ...prev.feed.links],
@@ -145,6 +153,7 @@ const LinkList = () => {
   subscribeToMore({
     document: NEW_VOTES_SUBSCRIPTION
   });
+
 
   return (
     <>
@@ -193,7 +202,6 @@ const LinkList = () => {
       )}
     </>
   );
-  
 };
 
 export default LinkList;

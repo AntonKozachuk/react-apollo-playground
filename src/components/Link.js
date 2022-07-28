@@ -27,7 +27,7 @@ const VOTE_MUTATION = gql`
 const Link = (props) => {
   const take = LINKS_PER_PAGE;
   const skip = 0;
-  const orderBy = { createdAt: 'desc' };
+  const orderBy = {createdAt: 'desc'};
 
   const { link } = props;
   const authToken = localStorage.getItem(AUTH_TOKEN);

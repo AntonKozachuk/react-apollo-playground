@@ -52,11 +52,15 @@ const link = split(
   authLink.concat(httpLink)
 );
 
-
-
 const client = new ApolloClient({
   link,
-  cache: new InMemoryCache()
+  cache: new InMemoryCache({
+    typePolicies: {
+      Link: {
+        keyFields: ["id"]
+      }
+    }
+  })
 });
 
 ReactDOM.render(
